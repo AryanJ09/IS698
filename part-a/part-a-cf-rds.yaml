@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Launch RDS MySQL instance using existing VPC, subnets, and security group
+
+Parameters:
+  DBSubnet1:
+    Type: String
+    Default: subnet-089d41756c295f5fa
+    Description: First private subnet in VPC vpc-055a5be96cb737bd6
+
+  DBSubnet2:
+    Type: String
+    Default: subnet-0e2321d8b506773ea
+    Description: Second private subnet in a different AZ of the same VPC
+
+  RDSSGId:
+    Type: String
+    Default: sg-0184fc8082cd420f8
+    Description: RDS Security Group ID (must allow inbound 3306 access)
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group across 2 AZs in VPC vpc-055a5be96cb737bd6
+      SubnetIds:
+        - !Ref DBSubnet1
+        - !Ref DBSubnet2
+      Tags:
+        - Key: Name
+          Value: rds-subnet-group
+
+  MyDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: mydb
+      Engine: mysql
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: mysecurepass123
+      VPCSecurityGroups:
+        - !Ref RDSSGId
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      MultiAZ: false
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 0
+      DeletionProtection: false
+      Tags:
+        - Key: Name
+          Value: rds-mysql
+
+Outputs:
+  DBInstanceEndpoint:
+    Description: Endpoint of the RDS instance
+    Value: !GetAtt MyDBInstance.Endpoint.Address
