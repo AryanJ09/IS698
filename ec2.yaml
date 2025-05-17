@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Launch EC2 instance using existing subnet and security group
+
+Parameters:
+  PublicSubnetId:
+    Type: String
+    Default: subnet-00eb5c83dd1839619
+    Description: Subnet ID for EC2 instance
+
+  WebSGId:
+    Type: String
+    Default: sg-0378e3586d69394e3
+    Description: Security Group ID for EC2
+
+  KeyName:
+    Type: String
+    Default: my_key
+    Description: EC2 key pair name
+
+Resources:
+  WebInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0953476d60561c955  # Amazon Linux 2 AMI (us-east-1)
+      InstanceType: t2.micro
+      SubnetId: !Ref PublicSubnetId
+      SecurityGroupIds:
+        - !Ref WebSGId
+      KeyName: !Ref KeyName
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "<h1>Hello from EC2 via CloudFormation</h1>" > /var/www/html/index.html
+
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref WebInstance
+
+  PublicIP:
+    Description: EC2 Public IP Address
+    Value: !GetAtt WebInstance.PublicIp
